@@ -1,4 +1,4 @@
-CALENDAR_ID = "REPLACE_WITH_YOUR_CALENDAR_ID"
+CALENDAR_ID = "ab771cebfa8568bc7bf235ebffe22cca74458429c19dce4590e01a7bd1b07182@group.calendar.google.com"
 
 WORK_HOURS = {
     "mon": ("09:00", "18:00"),
