@@ -1,57 +1,71 @@
-
 from datetime import datetime, timedelta
+import pytz
+from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
-START_HOUR = 8
-END_HOUR = 20
-SLOT_DURATION = timedelta(minutes=30)
+SCOPES = ['https://www.googleapis.com/auth/calendar']
+SERVICE_ACCOUNT_FILE = 'fitnessstudio-sonnenberg-06c2e2dfd96c.json'
+CALENDAR_ID = 'primary'
 
-def get_calendar_service():
-    from google.oauth2 import service_account
-    SCOPES = ['https://www.googleapis.com/auth/calendar']
-    SERVICE_ACCOUNT_FILE = 'credentials.json'
-    credentials = service_account.Credentials.from_service_account_file(
-        SERVICE_ACCOUNT_FILE, scopes=SCOPES)
-    service = build('calendar', 'v3', credentials=credentials)
-    return service
+credentials = service_account.Credentials.from_service_account_file(
+    SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+service = build('calendar', 'v3', credentials=credentials)
 
-def is_time_slot_available(service, calendar_id, start_time, duration):
-    end_time = start_time + duration
+OPENING_HOUR = 9
+CLOSING_HOUR = 18
+SLOT_DURATION_MINUTES = 30
+
+def is_slot_free(date_str, time_str):
+    tz = pytz.timezone('Europe/Berlin')
+    start_datetime = tz.localize(datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M"))
+    end_datetime = start_datetime + timedelta(minutes=SLOT_DURATION_MINUTES)
+
     events_result = service.events().list(
-        calendarId=calendar_id,
-        timeMin=start_time.isoformat() + 'Z',
-        timeMax=end_time.isoformat() + 'Z',
+        calendarId=CALENDAR_ID,
+        timeMin=start_datetime.isoformat(),
+        timeMax=end_datetime.isoformat(),
         singleEvents=True,
         orderBy='startTime'
     ).execute()
-    events = events_result.get('items', [])
-    return len(events) == 0
 
-def get_free_slots_for_date(service, calendar_id, date_str):
+    return len(events_result.get('items', [])) == 0
+
+def get_free_slots_for_date(date_str):
+    tz = pytz.timezone('Europe/Berlin')
     date = datetime.strptime(date_str, "%Y-%m-%d")
-    start_datetime = datetime.combine(date, datetime.min.time()).replace(hour=START_HOUR)
-    end_datetime = datetime.combine(date, datetime.min.time()).replace(hour=END_HOUR)
     slots = []
-    current = start_datetime
 
-    while current + SLOT_DURATION <= end_datetime:
-        if is_time_slot_available(service, calendar_id, current, SLOT_DURATION):
-            slots.append(current.strftime("%H:%M"))
-        current += SLOT_DURATION
+    for hour in range(OPENING_HOUR, CLOSING_HOUR):
+        for minute in [0, 30]:
+            dt = tz.localize(datetime(date.year, date.month, date.day, hour, minute))
+            end_dt = dt + timedelta(minutes=SLOT_DURATION_MINUTES)
+
+            events = service.events().list(
+                calendarId=CALENDAR_ID,
+                timeMin=dt.isoformat(),
+                timeMax=end_dt.isoformat(),
+                singleEvents=True,
+                orderBy='startTime'
+            ).execute()
+
+            if not events.get('items'):
+                slots.append(dt.strftime("%H:%M"))
 
     return slots
 
-def get_next_available_slots(service, calendar_id, days_ahead=7):
-    today = datetime.now().date()
-    next_slots = []
+def get_next_available_slots():
+    tz = pytz.timezone('Europe/Berlin')
+    now = datetime.now(tz)
+    slots = []
 
-    for day_offset in range(days_ahead):
-        current_date = today + timedelta(days=day_offset)
-        day_slots = get_free_slots_for_date(service, calendar_id, current_date.strftime("%Y-%m-%d"))
-        if day_slots:
-            next_slots.append({
-                "date": current_date.strftime("%Y-%m-%d"),
-                "slots": day_slots
-            })
+    for days_ahead in range(7):
+        day = now + timedelta(days=days_ahead)
+        date_str = day.strftime("%Y-%m-%d")
+        day_slots = get_free_slots_for_date(date_str)
 
-    return next_slots
+        for time in day_slots:
+            slots.append({"date": date_str, "time": time})
+            if len(slots) >= 5:
+                return slots
+
+    return slots
