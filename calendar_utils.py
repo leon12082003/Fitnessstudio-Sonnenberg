@@ -6,7 +6,7 @@ import pytz
 
 SERVICE_ACCOUNT_FILE = 'fitnessstudio-sonnenberg-06c2e2dfd96c.json'
 SCOPES = ['https://www.googleapis.com/auth/calendar']
-CALENDAR_ID = 'primary'
+from config import CALENDAR_ID
 
 credentials = service_account.Credentials.from_service_account_file(
     SERVICE_ACCOUNT_FILE, scopes=SCOPES
