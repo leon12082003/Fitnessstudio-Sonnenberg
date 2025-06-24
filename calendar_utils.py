@@ -1,11 +1,11 @@
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta, time
-from config import WORK_HOURS, SERVICE_ACCOUNT_FILE, CALENDAR_ID, SLOT_DURATION_MINUTES
+from config import WORK_HOURS, SERVICE_ACCOUNT_INFO, CALENDAR_ID, SLOT_DURATION_MINUTES
 
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
-credentials = service_account.Credentials.from_service_account_file(
-    SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+credentials = service_account.Credentials.from_service_account_info(
+    SERVICE_ACCOUNT_INFO, scopes=SCOPES)
 service = build("calendar", "v3", credentials=credentials)
 
 weekday_map = {
