@@ -131,7 +131,13 @@ def get_next_free_slots(calendar_id, count=3):
             date_str = date.strftime("%Y-%m-%d")
             after_time = None
             if i == 0:
-                after_time = (now + timedelta(minutes=1)).strftime("%H:%M")
+                # Runde auf nächste halbe Stunde
+                minute = 30 if now.minute >= 30 else 0
+                next_half_hour = now.replace(minute=minute, second=0, microsecond=0)
+                if now.minute >= 30:
+                    next_half_hour += timedelta(hours=1)
+                after_time = next_half_hour.strftime("%H:%M")
+
             slots_today = get_free_slots_for_day(calendar_id, date_str, after_time)
             for slot in slots_today:
                 slots.append(f"{date_str} {slot}")
