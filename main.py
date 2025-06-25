@@ -32,7 +32,7 @@ def check_availability(req: AvailabilityRequest):
     dt = datetime.fromisoformat(f"{req.date}T{req.time}")
     available = is_slot_free(CALENDAR_ID, dt)
     if not available:
-        # negativer Fall → 409 Conflict
+        # negativer Fall → 403 Conflict
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Time slot not available"
@@ -46,7 +46,7 @@ def book(req: BookingRequest):
     dt = datetime.fromisoformat(f"{req.date}T{req.time}")
     success = book_appointment(CALENDAR_ID, dt, req.name)
     if not success:
-        # negativer Fall → 409 Conflict
+        # negativer Fall → 403 Conflict
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Time slot already booked"
@@ -60,7 +60,7 @@ def delete(req: DeleteRequest):
     dt = datetime.fromisoformat(f"{req.date}T{req.time}")
     success = delete_appointment(CALENDAR_ID, dt, req.name)
     if not success:
-        # negativer Fall → 404 Not Found
+        # negativer Fall → 403 Not Found
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Appointment not found"
@@ -73,7 +73,7 @@ def delete(req: DeleteRequest):
 def free_slots(req: FreeSlotsRequest):
     free = get_free_slots_for_day(CALENDAR_ID, req.date)
     if not free:
-        # negativer Fall → 204 No Content
+        # negativer Fall → 403 No Content
         raise HTTPException(
             status_code=status.HTTP_204_NO_CONTENT,
             detail="No free slots"
