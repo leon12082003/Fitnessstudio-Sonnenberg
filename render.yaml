@@ -1,3 +1,0 @@
-envVars:
-  - key: GOOGLE_APPLICATION_CREDENTIALS
-    value: service_account.json
